@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: library-api
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  info:
+    env:
+      enabled: true
+info:
+  app:
+    version: '@project.version@'

@@ -1,0 +1,75 @@
+// Demo 14 - Deploiement automatique (slides 67 a 70)
+// Publier (Nexus) avant de deployer, deployer une version, smoke test, approbation
+pipeline {
+  agent { label 'linux' }
+  tools { jdk 'jdk21'; maven 'maven-3.9' }
+  options {
+    timestamps()
+    disableConcurrentBuilds()
+  }
+  environment {
+    APP_VERSION = "1.4.${BUILD_NUMBER}"
+    NEXUS       = credentials('nexus-deploy')     // -> NEXUS_USR / NEXUS_PSW
+  }
+  stages {
+    stage('Build & Tests') {
+      steps { sh 'mvn -B -ntp -Drevision=$APP_VERSION clean verify' }
+      post  { always { junit 'target/surefire-reports/TEST-*.xml' } }
+    }
+    stage('Publish to Nexus') {
+      steps {
+        configFileProvider([configFile(fileId: 'nexus-settings', variable: 'SETTINGS')]) {
+          sh 'mvn -B -ntp -s $SETTINGS -Drevision=$APP_VERSION -DskipTests deploy'
+        }
+        archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+      }
+    }
+    stage('Docker image') {
+      steps {
+        sh 'docker build --build-arg JAR=target/library-api-$APP_VERSION.jar -t library-api:$APP_VERSION .'
+      }
+    }
+    stage('Deploy recette') {
+      options { lock('env-recette') }          // un seul deploiement a la fois sur cet env
+      steps {
+        sh '''
+          docker rm -f library-api-recette 2>/dev/null || true
+          docker run -d --name library-api-recette --network ci-formation \
+                 -p 8090:8080 library-api:$APP_VERSION
+        '''
+        // Smoke test : l'application doit repondre UP en moins d'une minute
+        sh 'for i in $(seq 1 30); do curl -sf http://library-api-recette:8080/actuator/health && exit 0; sleep 2; done; exit 1'
+      }
+    }
+    stage('Approve production') {
+      steps {
+        timeout(time: 30, unit: 'MINUTES') {
+          script {
+            // Avec des parametres, input renvoie une table : TICKET + APPROVER
+            def reponse = input(
+              message: "Deployer ${APP_VERSION} en production ?",
+              ok: 'Deployer',
+              submitterParameter: 'APPROVER',
+              parameters: [string(name: 'TICKET', defaultValue: 'CHG-0001',
+                                  description: 'Reference du change')])
+            env.APPROVER = reponse.APPROVER
+            env.TICKET   = reponse.TICKET
+          }
+        }
+      }
+    }
+    stage('Deploy production') {
+      options { lock('env-production') }
+      steps {
+        echo "Approuve par ${env.APPROVER} (${env.TICKET})"
+        sh '''
+          docker rm -f library-api-prod 2>/dev/null || true
+          docker run -d --name library-api-prod --network ci-formation \
+                 -p 8091:8080 library-api:$APP_VERSION
+        '''
+        sh 'for i in $(seq 1 30); do curl -sf http://library-api-prod:8080/actuator/health && exit 0; sleep 2; done; exit 1'
+        script { currentBuild.description = "v${APP_VERSION} en production (${env.APPROVER}, ${env.TICKET})" }
+      }
+    }
+  }
+}

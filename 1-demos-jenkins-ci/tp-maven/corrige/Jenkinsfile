@@ -1,0 +1,147 @@
+// Corrige du TP Maven : Jenkinsfile final du depot formation/inventaire-api
+pipeline {
+  agent { label 'linux' }
+
+  // Exercice 6 : genere par le Declarative Directive Generator (options)
+  options {
+    buildDiscarder logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '10')
+    timeout(20)
+    timestamps()
+    disableConcurrentBuilds()
+  }
+
+  // Exercice 6 : genere par le Declarative Directive Generator (parameters)
+  parameters {
+    booleanParam defaultValue: true, description: 'Deployer en recette apres les tests', name: 'DEPLOYER_RECETTE'
+    choice choices: ['INFO', 'DEBUG', 'WARN'], description: 'Niveau de log de l application deployee', name: 'NIVEAU_LOG'
+  }
+
+  environment {
+    NTFY_URL = 'http://ntfy/inventaire'
+  }
+
+  stages {
+    // Exercice 3 : version lue dans le pom.xml (Pipeline Utility Steps)
+    stage('Version') {
+      steps {
+        script {
+          def pom = readMavenPom file: 'pom.xml'
+          env.VERSION = pom.version
+          currentBuild.displayName = "#${env.BUILD_NUMBER} - ${env.VERSION}"
+        }
+      }
+    }
+
+    // Exercice 2 : build et tests unitaires
+    stage('Build & tests unitaires') {
+      steps {
+        sh './mvnw -B -ntp clean package'
+      }
+      post {
+        always {
+          junit 'target/surefire-reports/*.xml'
+        }
+        success {
+          archiveArtifacts artifacts: 'target/*.jar', fingerprint: true, followSymlinks: false
+        }
+      }
+    }
+
+    // Exercice 4 : tests d'integration et analyse en parallele
+    stage('Verifications') {
+      parallel {
+        stage('Tests d\'integration') {
+          steps {
+            sh './mvnw -B -ntp failsafe:integration-test failsafe:verify'
+          }
+          post {
+            always {
+              junit 'target/failsafe-reports/*.xml'
+            }
+          }
+        }
+        stage('Analyse PMD') {
+          steps {
+            sh './mvnw -B -ntp pmd:pmd pmd:cpd'
+          }
+        }
+      }
+    }
+
+    // Exercice 5 : couverture et analyse statique, avec seuils
+    stage('Rapports qualite') {
+      steps {
+        recordCoverage qualityGates: [[integerThreshold: 50, metric: 'LINE', threshold: 50.0]],
+                       tools: [[pattern: 'target/site/jacoco/jacoco.xml']]
+        recordIssues qualityGates: [[integerThreshold: 5, threshold: 5.0, type: 'TOTAL']],
+                     sourceCodeRetention: 'LAST_BUILD',
+                     tools: [pmdParser(pattern: 'target/pmd.xml'), cpd(pattern: 'target/cpd.xml')]
+      }
+    }
+
+    // Exercice 7 : image Docker de l'application
+    stage('Image Docker') {
+      steps {
+        sh 'docker build --build-arg JAR=target/inventaire-api-$VERSION.jar -t inventaire-api:$VERSION .'
+      }
+    }
+
+    // Exercices 7 et 8 : deploiement en recette sous verrou, puis smoke test
+    stage('Deploiement recette') {
+      when {
+        allOf {
+          branch 'main'
+          expression { params.DEPLOYER_RECETTE }
+        }
+        beforeAgent true
+      }
+      steps {
+        lock(resource: 'recette-inventaire') {
+          sh """
+            docker rm -f inventaire-recette || true
+            docker run -d --name inventaire-recette --network ci-formation -p 8097:8080 \
+              -e LOGGING_LEVEL_ROOT=${params.NIVEAU_LOG} inventaire-api:${env.VERSION}
+          """
+          retry(10) {
+            sleep 3
+            httpRequest consoleLogResponseBody: true, responseHandle: 'NONE',
+                        url: 'http://inventaire-recette:8080/actuator/health',
+                        validResponseCodes: '200', validResponseContent: 'UP', wrapAsMultipart: false
+          }
+        }
+      }
+    }
+  }
+
+  // Exercice 9 : notifications ntfy (squelette genere par le Directive Generator, post)
+  post {
+    success {
+      httpRequest customHeaders: [[maskValue: false, name: 'Title', value: "inventaire-api ${env.VERSION} : OK"],
+                                  [maskValue: false, name: 'Tags', value: 'white_check_mark']],
+                  httpMode: 'POST', requestBody: "${currentBuild.fullDisplayName} reussi : ${env.BUILD_URL}",
+                  responseHandle: 'NONE', url: env.NTFY_URL, wrapAsMultipart: false
+    }
+    unstable {
+      httpRequest customHeaders: [[maskValue: false, name: 'Title', value: "inventaire-api ${env.VERSION} : instable"],
+                                  [maskValue: false, name: 'Tags', value: 'warning']],
+                  httpMode: 'POST', requestBody: "${currentBuild.fullDisplayName} : seuil de qualite depasse ${env.BUILD_URL}",
+                  responseHandle: 'NONE', url: env.NTFY_URL, wrapAsMultipart: false
+    }
+    failure {
+      httpRequest customHeaders: [[maskValue: false, name: 'Title', value: 'inventaire-api : ECHEC'],
+                                  [maskValue: false, name: 'Tags', value: 'x'],
+                                  [maskValue: false, name: 'Priority', value: 'high']],
+                  httpMode: 'POST', requestBody: "${currentBuild.fullDisplayName} en echec : ${env.BUILD_URL}console",
+                  responseHandle: 'NONE', url: env.NTFY_URL, wrapAsMultipart: false
+    }
+    fixed {
+      httpRequest customHeaders: [[maskValue: false, name: 'Title', value: 'inventaire-api : repare'],
+                                  [maskValue: false, name: 'Tags', value: 'tada']],
+                  httpMode: 'POST', requestBody: "${currentBuild.fullDisplayName} : la branche est de nouveau verte",
+                  responseHandle: 'NONE', url: env.NTFY_URL, wrapAsMultipart: false
+    }
+    cleanup {
+      cleanWs()
+    }
+  }
+}

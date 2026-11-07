@@ -1,0 +1,11 @@
+# Fin de la demo 18 : retour a l'etat des demos precedentes.
+# Les comptes locaux (admin / Formation-2026) n'ont jamais ete supprimes de JENKINS_HOME/users/ :
+# il suffit de reprendre la base interne et la strategie d'autorisation par defaut.
+
+jenkins:
+  securityRealm:
+    local:
+      allowsSignup: false
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false

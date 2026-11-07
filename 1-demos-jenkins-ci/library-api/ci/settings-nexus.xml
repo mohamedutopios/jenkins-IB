@@ -1,0 +1,16 @@
+<!-- Contenu du fichier "nexus-settings" (Config File Provider, demo 14)
+     Les identifiants viennent des variables injectees par credentials('nexus-deploy') -->
+<settings>
+  <servers>
+    <server>
+      <id>nexus-releases</id>
+      <username>${env.NEXUS_USR}</username>
+      <password>${env.NEXUS_PSW}</password>
+    </server>
+    <server>
+      <id>nexus-snapshots</id>
+      <username>${env.NEXUS_USR}</username>
+      <password>${env.NEXUS_PSW}</password>
+    </server>
+  </servers>
+</settings>

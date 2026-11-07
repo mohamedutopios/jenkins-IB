@@ -1,0 +1,11 @@
+// Seed job : applique seed/jobs.groovy (plugin Job DSL, slide 56)
+pipeline {
+  agent { label 'linux' }
+  stages {
+    stage('Seed') {
+      steps {
+        jobDsl targets: 'seed/jobs.groovy', removedJobAction: 'DELETE', removedViewAction: 'DELETE'
+      }
+    }
+  }
+}

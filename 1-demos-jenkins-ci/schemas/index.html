@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Schémas des démos Jenkins</title><style>
+:root{--fond:#f7f6f2;--surface:#ffffff;--texte:#1f2328;--doux:#5b636e;--ligne:#d5d8dc;
+--orange:#c2571a;--orange-f:#fbe8db;--bleu:#2a62b8;--bleu-f:#e3ecf9;--gris:#8a929b;--gris-f:#f1f2f4;
+--vert:#2f7d43;--vert-f:#dff1e3;--rouge:#b3261e;--rouge-f:#f8dedc;--jaune:#9a6b00;--jaune-f:#fbefc9;--code:#eef0f3}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--fond:#16181c;--surface:#1f2228;--texte:#e6e8eb;--doux:#a2a9b3;--ligne:#3a3f47;
+--orange:#f0904f;--orange-f:#3f2616;--bleu:#7aa7ec;--bleu-f:#1b2a42;--gris:#8d949d;--gris-f:#262a31;
+--vert:#6cc283;--vert-f:#1b3323;--rouge:#f08a82;--rouge-f:#3d1e1c;--jaune:#e6be5a;--jaune-f:#3a3016;--code:#2a2e35}}
+:root[data-theme="dark"]{--fond:#16181c;--surface:#1f2228;--texte:#e6e8eb;--doux:#a2a9b3;--ligne:#3a3f47;
+--orange:#f0904f;--orange-f:#3f2616;--bleu:#7aa7ec;--bleu-f:#1b2a42;--gris:#8d949d;--gris-f:#262a31;
+--vert:#6cc283;--vert-f:#1b3323;--rouge:#f08a82;--rouge-f:#3d1e1c;--jaune:#e6be5a;--jaune-f:#3a3016;--code:#2a2e35}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fond);color:var(--texte);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1180px;margin:0 auto;padding:24px 16px 64px}
+a{color:var(--bleu)}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+.fil{font-size:.9rem;color:var(--doux);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-size:1.8rem;margin:.3em 0 .1em}
+.meta{color:var(--doux);margin:0 0 1.2em}
+h2{font-size:1.25rem;margin:2em 0 .6em;padding-bottom:.3em;border-bottom:1px solid var(--ligne)}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.carton{background:var(--surface);border:1px solid var(--ligne);border-radius:12px;padding:14px 18px}
+.carton h3{margin:0 0 .4em;font-size:1rem}
+.carton p{margin:0}
+.figure{background:var(--surface);border:1px solid var(--ligne);border-radius:12px;padding:12px;overflow-x:auto}
+svg.carte{width:100%;min-width:760px;height:auto;display:block}
+svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.reseau{fill:none;stroke:var(--ligne);stroke-width:1.5;stroke-dasharray:6 5}
+.reseau-t{fill:var(--doux);font-size:12px}
+.poste{fill:none;stroke:var(--ligne);stroke-width:1.5}
+.poste-t{fill:var(--doux);font-size:13px;font-weight:600}
+.comp rect{stroke-width:1.6}
+.comp .c-t{font-size:14px;font-weight:700;fill:var(--texte)}
+.comp .c-l{font-size:12px;fill:var(--doux)}
+.st-nouveau rect{fill:var(--orange-f);stroke:var(--orange);stroke-width:2.4}
+.st-utilise rect{fill:var(--bleu-f);stroke:var(--bleu)}
+.st-inchange rect{fill:var(--gris-f);stroke:var(--gris)}
+.st-absent rect{fill:none;stroke:var(--gris);stroke-dasharray:5 4}
+.st-absent text{opacity:.6}
+.lien{fill:none;stroke:var(--orange);stroke-width:2.2}
+.lien-ancien{fill:none;stroke:var(--gris);stroke-width:1.2;stroke-dasharray:4 4;opacity:.75}
+.tete{fill:var(--orange)} .tete-g{fill:var(--gris)}
+.proto{font-size:11.5px;fill:var(--orange);font-weight:600;paint-order:stroke;stroke:var(--surface);stroke-width:4px}
+.num circle{stroke:var(--surface);stroke-width:2}
+.num text{font-size:12px;font-weight:700;fill:#fff}
+.num-lien circle,.num-int circle{fill:var(--orange)}
+.num-nav circle{fill:var(--bleu)}
+.num-term circle{fill:#3d434b}
+.legende{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:.88rem;color:var(--doux);margin:10px 4px 0}
+.legende span{display:inline-flex;align-items:center;gap:6px}
+.pastille{width:14px;height:14px;border-radius:4px;border:2px solid;display:inline-block}
+.p-nouveau{background:var(--orange-f);border-color:var(--orange)}
+.p-utilise{background:var(--bleu-f);border-color:var(--bleu)}
+.p-inchange{background:var(--gris-f);border-color:var(--gris)}
+.pastille.p-absent,.d.p-absent{border-style:dashed;border-color:var(--gris)}
+.rond{width:18px;height:18px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.r-nav{background:var(--bleu)} .r-term{background:#3d434b} .r-lien,.r-int{background:var(--orange)}
+ol.flux{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:6px}
+ol.flux li{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--ligne);border-radius:8px;padding:7px 12px}
+ol.flux .rond{margin-top:3px}
+ol.flux .ou{color:var(--doux);font-size:.85rem;white-space:nowrap;min-width:150px}
+.etat{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.etat .carton h3{display:flex;justify-content:space-between}
+.cat{margin:.6em 0 .2em;font-size:.8rem;text-transform:uppercase;letter-spacing:.04em;color:var(--doux)}
+.cat:first-of-type{margin-top:0}
+.item{font-size:.9rem;padding:3px 8px;border-radius:6px;margin:2px 0;border-left:3px solid var(--gris);background:var(--gris-f)}
+.item.nouveau{border-left-color:var(--orange);background:var(--orange-f)}
+.item.modifie{border-left-color:var(--bleu);background:var(--bleu-f)}
+.item .tag{font-size:.72rem;font-weight:700;color:var(--orange);margin-left:6px;text-transform:uppercase}
+.item.modifie .tag{color:var(--bleu)}
+.vide{color:var(--doux);font-style:italic;font-size:.9rem}
+ol.deroule{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;counter-reset:d}
+ol.deroule li{counter-increment:d;background:var(--surface);border:1px solid var(--ligne);border-radius:10px;padding:10px 12px;position:relative}
+ol.deroule li::before{content:counter(d);position:absolute;top:-10px;left:10px;background:var(--texte);color:var(--fond);border-radius:10px;font-size:.75rem;font-weight:700;padding:0 7px}
+ol.deroule b{display:block;margin-top:4px}
+ol.deroule span{font-size:.88rem;color:var(--doux)}
+svg.pipe{height:auto;display:block;max-width:100%}
+.pipe .stage rect{fill:var(--bleu-f);stroke:var(--bleu);stroke-width:1.6}
+.pipe .stage.cond rect{fill:var(--surface);stroke-dasharray:6 4}
+.pipe .post rect{fill:var(--gris-f);stroke:var(--gris);stroke-width:1.4}
+.pipe .s-t{font-size:13.5px;font-weight:700;fill:var(--texte)}
+.pipe .s-l{font-size:11.5px;fill:var(--doux);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.pipe .s-c{font-size:11.5px;fill:var(--orange);font-weight:600}
+.pipe .fleche{stroke:var(--gris);stroke-width:1.6}
+.legende-pipe{font-size:.9rem;color:var(--doux);margin:0 0 6px}
+.bande{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch}
+.bande .b{flex:1 1 150px;border-radius:10px;padding:10px 12px;border:1.6px solid}
+.bande .b b{display:block}
+.bande .b span{font-size:.88rem}
+.b.ok{background:var(--vert-f);border-color:var(--vert)} .b.ko{background:var(--rouge-f);border-color:var(--rouge)}
+.b.warn{background:var(--jaune-f);border-color:var(--jaune)} .b.gris{background:var(--gris-f);border-color:var(--gris)}
+table{border-collapse:collapse;width:100%;background:var(--surface);border:1px solid var(--ligne);border-radius:10px;overflow:hidden;font-size:.92rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--ligne);vertical-align:top}
+th{background:var(--gris-f)}
+blockquote p{margin:.3em 0}
+blockquote pre{background:var(--code);padding:10px 12px;border-radius:6px;overflow-x:auto;font-size:.85rem}
+blockquote{margin:0;background:var(--surface);border:1px solid var(--ligne);border-left:4px solid var(--orange);border-radius:8px;padding:12px 16px}
+.nav-bas{display:flex;justify-content:space-between;margin-top:36px;gap:12px;flex-wrap:wrap}
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.grille a{text-decoration:none;color:inherit}
+.grille .carton:hover{border-color:var(--bleu)}
+.grille .n{font-size:.8rem;color:var(--doux)}
+.matrice td.c{text-align:center}
+.d{display:inline-block;width:14px;height:14px;border-radius:4px;border-width:2px;border-style:solid}
+@media (max-width:760px){.duo,.etat{grid-template-columns:1fr}h1{font-size:1.45rem}ol.flux .ou{min-width:0}ol.flux li{flex-wrap:wrap}}
+</style></head>
+<body><main>
+<div class="fil"><span>Kit 1-demos-jenkins-ci</span><a href="../DEMOS-v2.md">DEMOS-v2.md</a></div>
+<h1>Démos Jenkins CI : un schéma par démo</h1>
+<p class="meta">Chaque page reprend le « pourquoi » de la démo, montre sur la carte de la stack ce qui est créé et ce qui communique, compare l'état de Jenkins avant et après, puis résume le déroulé et le pipeline.</p>
+<div class="grille"><a href="demo-00.html"><div class="carton"><div class="n">Démo 0</div><b>Démarrer l&#x27;environnement</b><p style="font-size:.88rem;color:var(--doux);margin-top:.4em">Slides : 40 · Durée : 10 min · Prérequis : Docker Desktop (ou Docker Engine + Compose v2), 8 Go de RAM alloués à Docker, accès Internet (images, plugins, dépendances Maven)</p></div></a><a href="demo-01.html"><div class="carton"><div class="n">Démo 1</div><b>Installer Jenkins et passer l&#x27;assistant</b><p style="font-size:.88rem;color:var(--doux);margin-top:.4em">Slides : 39 à 42 · Durée : 15 min (plus le téléchargement des plugins) · Prérequis : démo 0</p></div></a><a href="demo-02.html"><div class="carton"><div class="n">Démo 2</div><b>Premier job Freestyle et visite guidée</b><p style="font-size:.88rem;color:var(--doux);margin-top:.4em">Slides : 22, 24, 35 à 37, 42 · Durée : 15 min · Prérequis : démo 1</p></div></a><a href="demo-03.html"><div class="carton"><div class="n">Démo 3</div><b>Déclencheurs et statuts de build</b><p style="font-size:.88rem;color:var(--doux);margin-top:.4em">Slides : 29, 30, 32, 33 · Durée : 20 min · Prérequis : démo 2</p></div></a><a href="demo-04.html"><div class="carton"><div class="n">Démo 4</div><b>Le workspace</b><p style="font-size:.88rem;color:var(--doux);margin-top:.4em">Slides : 34 · Durée : 10 min · Prérequis : démo 3</p></div></a><a href="demo-05.html"><div class="carton"><div class="n">Démo 5</div><b>Configuration System et agent SSH</b><p style="font-size:.88rem;color:var(--doux);margin-top:.4em">Slides : 23, 43, 46 · Durée : 20 min · Prérequis : démo 4, conteneur <code>linux-1</code> démarré (démo 0)</p></div></a><a href="demo-06.html"><div class="carton"><div class="n">Démo 6</div><b>Installer les plugins de la partie 3</b><p style="font-size:.88rem;color:var(--doux);margin-top:.4em">Slides : 47 à 49 · Durée : 10 min (plus le téléchargement) · Prérequis : démo 5</p></div></a><a href="demo-07.html"><div class="carton"><div class="n">Démo 7</div><b>Tools et credentials</b><p style="font-size:.88rem;color:var(--doux);margin-top:.4em">Slides : 44, 45, 56 · Durée : 15 min · Prérequis : démo 6</p></div></a><a href="demo-08.html"><div class="carton"><div class="n">Démo 8</div><b>Job Freestyle library-api</b><p style="font-size:.88rem;color:var(--doux);margin-top:.4em">Slides : 25, 54, 56, 58 · Durée : 20 min · Prérequis : démo 7</p></div></a><a href="demo-09.html"><div class="carton"><div class="n">Démo 9</div><b>Job Pipeline et Jenkinsfile</b><p style="font-size:.88rem;color:var(--doux);margin-top:.4em">Slides : 26 à 28, 33, 38, 55 · Durée : 25 min · Prérequis : démo 8</p></div></a><a href="demo-10.html"><div class="carton"><div class="n">Démo 10</div><b>Multibranch Pipeline et webhook</b><p style="font-size:.88rem;color:var(--doux);margin-top:.4em">Slides : 29, 31, 55 à 57 · Durée : 25 min · Prérequis : démo 9</p></div></a><a href="demo-11.html"><div class="carton"><div class="n">Démo 11</div><b>Paramétrage Maven et build paramétré</b><p style="font-size:.88rem;color:var(--doux);margin-top:.4em">Slides : 58 à 60 · Durée : 15 min · Prérequis : démo 10</p></div></a><a href="demo-12.html"><div class="carton"><div class="n">Démo 12</div><b>Rapports de tests et couverture</b><p style="font-size:.88rem;color:var(--doux);margin-top:.4em">Slides : 32, 61 à 63 · Durée : 20 min · Prérequis : démo 11</p></div></a><a href="demo-13.html"><div class="carton"><div class="n">Démo 13</div><b>Notifications par mail</b><p style="font-size:.88rem;color:var(--doux);margin-top:.4em">Slides : 64 à 66 · Durée : 15 min · Prérequis : démo 12</p></div></a><a href="demo-14.html"><div class="carton"><div class="n">Démo 14</div><b>Déploiement automatique</b><p style="font-size:.88rem;color:var(--doux);margin-top:.4em">Slides : 67 à 70 · Durée : 30 min · Prérequis : démo 13</p></div></a><a href="demo-15.html"><div class="carton"><div class="n">Démo 15</div><b>Analyse qualité avec SonarQube</b><p style="font-size:.88rem;color:var(--doux);margin-top:.4em">Slides : 71 à 73 · Durée : 25 min · Prérequis : démo 14</p></div></a><a href="demo-16.html"><div class="carton"><div class="n">Démo 16</div><b>Habilitations</b><p style="font-size:.88rem;color:var(--doux);margin-top:.4em">Slides : 74 à 77 · Durée : 25 min · Prérequis : démo 15</p></div></a><a href="demo-17.html"><div class="carton"><div class="n">Démo 17</div><b>Pipeline complet du fil rouge</b><p style="font-size:.88rem;color:var(--doux);margin-top:.4em">Slides : 78, 79 · Durée : 20 min · Prérequis : démos 10 à 16 (credentials <code>gitea-token</code>, <code>nexus-deploy</code>, <code>sonar-token</code>, fichier <code>nexus-settings</code>, serveurs SonarQube et SMTP)</p></div></a></div>
+<h2>Ce que chaque démo touche dans la stack</h2>
+<div class="figure"><table class="matrice"><tr><th>Démo</th><th class="c">Gitea</th><th class="c">Jenkins</th><th class="c">linux-1</th><th class="c">Mailpit</th><th class="c">Nexus</th><th class="c">SonarQube</th><th class="c">Docker du poste</th><th class="c">recette</th><th class="c">production</th></tr><tr><td><a href="demo-00.html">0. Démarrer l&#x27;environnement</a></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td></tr><tr><td><a href="demo-01.html">1. Installer Jenkins et passer l&#x27;assistant</a></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td></tr><tr><td><a href="demo-02.html">2. Premier job Freestyle et visite guidée</a></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-utilise"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td></tr><tr><td><a href="demo-03.html">3. Déclencheurs et statuts de build</a></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-utilise"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td></tr><tr><td><a href="demo-04.html">4. Le workspace</a></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-utilise"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td></tr><tr><td><a href="demo-05.html">5. Configuration System et agent SSH</a></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td></tr><tr><td><a href="demo-06.html">6. Installer les plugins de la partie 3</a></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td></tr><tr><td><a href="demo-07.html">7. Tools et credentials</a></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td></tr><tr><td><a href="demo-08.html">8. Job Freestyle library-api</a></td><td class="c"><span class="d p-utilise"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-utilise"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td></tr><tr><td><a href="demo-09.html">9. Job Pipeline et Jenkinsfile</a></td><td class="c"><span class="d p-utilise"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-utilise"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td></tr><tr><td><a href="demo-10.html">10. Multibranch Pipeline et webhook</a></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-utilise"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td></tr><tr><td><a href="demo-11.html">11. Paramétrage Maven et build paramétré</a></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-utilise"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td></tr><tr><td><a href="demo-12.html">12. Rapports de tests et couverture</a></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-utilise"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td></tr><tr><td><a href="demo-13.html">13. Notifications par mail</a></td><td class="c"><span class="d p-utilise"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-absent"></span></td></tr><tr><td><a href="demo-14.html">14. Déploiement automatique</a></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-utilise"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-absent"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-nouveau"></span></td></tr><tr><td><a href="demo-15.html">15. Analyse qualité avec SonarQube</a></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-utilise"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-inchange"></span></td></tr><tr><td><a href="demo-16.html">16. Habilitations</a></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-inchange"></span></td></tr><tr><td><a href="demo-17.html">17. Pipeline complet du fil rouge</a></td><td class="c"><span class="d p-utilise"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-inchange"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-nouveau"></span></td><td class="c"><span class="d p-nouveau"></span></td></tr></table></div>
+<p class="legende">
+<span><span class="pastille p-nouveau"></span>créé ou configuré</span>
+<span><span class="pastille p-utilise"></span>utilisé</span>
+<span><span class="pastille p-inchange"></span>inchangé</span>
+<span><span class="pastille p-absent"></span>pas encore démarré</span>
+</p>
+</main></body></html>

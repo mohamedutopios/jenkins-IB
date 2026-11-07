@@ -1,0 +1,103 @@
+# Services ajoutes pour la partie 2. La stack de la partie 1 (../1-demos-jenkins-ci) doit tourner :
+# ces conteneurs rejoignent son reseau "ci-formation".
+#
+#   docker compose up -d wildfly                 -> demo 4 (Jakarta EE)
+#   docker compose up -d docker-proxy            -> demo 10 (agents Docker ephemeres)
+#   docker compose up -d linux-2                 -> demo 9 (agent inbound) : JENKINS_SECRET requis dans .env
+#   docker compose up -d prometheus grafana      -> demo 14 (supervision)
+#   docker compose up -d lldap                   -> demo 18 (annuaire LDAP)
+
+name: jenkins-formation-p2
+
+services:
+
+  # Serveur d'applications Jakarta EE (slide 9). Compte de management cree au demarrage.
+  wildfly:
+    image: quay.io/wildfly/wildfly:42.0.0.Final-jdk21
+    container_name: wildfly
+    ports:
+      - "${WILDFLY_PORT}:8080"
+      - "${WILDFLY_ADMIN_PORT}:9990"
+    command: >
+      sh -c "/opt/jboss/wildfly/bin/add-user.sh -u ${WILDFLY_ADMIN_USER} -p ${WILDFLY_ADMIN_PASSWORD} --silent || true;
+             exec /opt/jboss/wildfly/bin/standalone.sh -b 0.0.0.0 -bmanagement 0.0.0.0"
+    restart: unless-stopped
+
+  # Agent inbound (slide 28) : il se connecte lui-meme au controller, par WebSocket
+  linux-2:
+    image: jenkins/inbound-agent:jdk21
+    container_name: linux-2
+    hostname: linux-2
+    profiles: ["cluster"]
+    environment:
+      JENKINS_URL: http://jenkins:8080/
+      JENKINS_AGENT_NAME: linux-2
+      JENKINS_SECRET: ${JENKINS_SECRET_LINUX2}
+      JENKINS_WEB_SOCKET: "true"
+      JENKINS_AGENT_WORKDIR: /home/jenkins/agent
+    restart: unless-stopped
+
+  # Expose l'API Docker de l'hote en TCP sur le reseau de formation, pour le plugin Docker (slide 31).
+  # Equivaut a donner a Jenkins le controle du Docker de l'hote : formation uniquement.
+  docker-proxy:
+    image: alpine/socat:latest
+    container_name: docker-proxy
+    profiles: ["cluster"]
+    command: tcp-listen:2375,fork,reuseaddr unix-connect:/var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+
+  # Supervision (slide 48)
+  prometheus:
+    image: prom/prometheus:v3.15.1
+    container_name: prometheus
+    profiles: ["monitoring"]
+    ports:
+      - "${PROMETHEUS_PORT}:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:13.3.0
+    container_name: grafana
+    profiles: ["monitoring"]
+    ports:
+      - "${GRAFANA_PORT}:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: Formation-2026
+    restart: unless-stopped
+
+  # Annuaire d'entreprise (demo 18) : LDAP sur lldap:3890, interface d'administration web.
+  # Les comptes et groupes de annuaire/ sont crees par : docker exec lldap /app/bootstrap.sh
+  lldap:
+    image: lldap/lldap:v0.6.2
+    container_name: lldap
+    profiles: ["annuaire"]
+    ports:
+      - "${LLDAP_PORT}:17170"
+    environment:
+      LLDAP_LDAP_BASE_DN: dc=formation,dc=local
+      # Administrateur de l'annuaire : un nom distinct du compte admin de Jenkins
+      LLDAP_LDAP_USER_DN: annuaire-admin
+      LLDAP_LDAP_USER_PASS: ${LLDAP_ADMIN_PASSWORD}
+      LLDAP_JWT_SECRET: formation-jwt-secret-a-changer
+      LLDAP_KEY_SEED: formation-key-seed-a-changer
+      # Lus par /app/bootstrap.sh
+      LLDAP_URL: http://localhost:17170
+      LLDAP_ADMIN_USERNAME: annuaire-admin
+      LLDAP_ADMIN_PASSWORD: ${LLDAP_ADMIN_PASSWORD}
+    volumes:
+      - lldap_data:/data
+      - ./annuaire/utilisateurs:/bootstrap/user-configs:ro
+      - ./annuaire/groupes:/bootstrap/group-configs:ro
+    restart: unless-stopped
+
+volumes:
+  lldap_data:
+
+networks:
+  default:
+    name: ci-formation
+    external: true

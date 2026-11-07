@@ -1,0 +1,29 @@
+# Service ajoute pour le TP Gradle. La stack du kit (../docker-compose.yml) doit tourner :
+# Mattermost rejoint son reseau "ci-formation" et Jenkins le joint par http://mattermost:8065.
+#
+#   docker compose up -d        (depuis ce dossier tp-gradle)
+
+name: jenkins-formation-tp
+
+services:
+
+  # Messagerie d'equipe (equivalent auto-heberge de Slack). Image "preview" : tout-en-un
+  # (base PostgreSQL incluse), reservee aux essais.
+  mattermost:
+    image: mattermost/mattermost-preview:10.11.4
+    container_name: mattermost
+    ports:
+      - "${MATTERMOST_PORT:-8065}:8065"
+    environment:
+      MM_SERVICESETTINGS_SITEURL: "http://localhost:${MATTERMOST_PORT:-8065}"
+      # Webhooks entrants : c'est par la que Jenkins poste ses messages
+      MM_SERVICESETTINGS_ENABLEINCOMINGWEBHOOKS: "true"
+      # Le plugin Jenkins choisit le nom et l'icone affiches sur ses messages
+      MM_SERVICESETTINGS_ENABLEPOSTUSERNAMEOVERRIDE: "true"
+      MM_SERVICESETTINGS_ENABLEPOSTICONOVERRIDE: "true"
+    restart: unless-stopped
+
+networks:
+  default:
+    name: ci-formation
+    external: true

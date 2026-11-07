@@ -1,0 +1,15 @@
+# Fins de ligne LF partout, y compris dans une copie de travail Windows (core.autocrlf=true).
+# Les scripts, Dockerfiles, Jenkinsfiles et projets du kit sont executes ou construits sous Linux
+# (conteneurs, agents) : un CRLF y casse le shebang ("exec ...: no such file or directory").
+* text=auto eol=lf
+
+# Scripts Windows
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binaires
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jar binary
+*.zip binary

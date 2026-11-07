@@ -1,0 +1,13 @@
+{
+  "name": "library-web",
+  "version": "2.0.0",
+  "description": "Front de la suite Library (fil rouge partie 2)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "node scripts/lint.mjs",
+    "pretest": "node -e \"require('fs').mkdirSync('test-results',{recursive:true})\"",
+    "test": "node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=test-results/junit.xml",
+    "build": "node scripts/build.mjs"
+  }
+}

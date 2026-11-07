@@ -1,0 +1,8 @@
+# Prometheus interroge l'endpoint du plugin Prometheus metrics de Jenkins (slide 48)
+global:
+  scrape_interval: 30s
+scrape_configs:
+  - job_name: jenkins
+    metrics_path: /prometheus/
+    static_configs:
+      - targets: ['jenkins:8080']

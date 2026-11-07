@@ -1,0 +1,7 @@
+# Vulnerabilites acceptees (risque analyse, decision tracee). Une ligne = un identifiant.
+# exp: date apres laquelle l'exception tombe d'elle-meme : le pipeline bloque a nouveau.
+
+# spring-webmvc 6.2.x : corrige seulement en 7.0.9 (Spring Boot 4). L'application n'utilise
+# ni XsltView ni Server-Sent Events. Migration Spring Boot 4 planifiee (ticket ARCH-77).
+CVE-2026-47884 exp:2027-03-31
+CVE-2026-47890 exp:2027-03-31

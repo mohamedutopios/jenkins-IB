@@ -1,0 +1,27 @@
+// Jenkinsfile minimal du fil rouge (slides 28 et 55)
+// Utilise par les demos 9 (job Pipeline) et 10 (Multibranch Pipeline)
+pipeline {
+  agent { label 'linux' }
+  tools { jdk 'jdk21'; maven 'maven-3.9' }
+  options {
+    timestamps()
+    buildDiscarder(logRotator(numToKeepStr: '20'))
+  }
+  stages {
+    stage('Build & Test') {
+      steps {
+        echo "Branche : ${env.BRANCH_NAME ?: env.GIT_BRANCH} - commit ${env.GIT_COMMIT}"
+        sh 'mvn -B -ntp clean verify'
+      }
+    }
+    stage('Package') {
+      when { branch 'main' }           // BRANCH_NAME n'existe qu'en Multibranch
+      steps {
+        archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+      }
+    }
+  }
+  post {
+    always { junit 'target/surefire-reports/*.xml' }
+  }
+}

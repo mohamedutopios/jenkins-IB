@@ -1,0 +1,19 @@
+// library-legacy : build Ant (slide 11)
+pipeline {
+  agent { label 'linux' }
+  tools { jdk 'jdk21'; ant 'ant-1.10' }         // ANT_HOME positionne, ant dans le PATH
+  options { timestamps() }
+  environment { LEGACY_VERSION = "1.0.${BUILD_NUMBER}" }
+  stages {
+    stage('Build legacy') {
+      steps {
+        sh 'ant -version'
+        sh 'ant -Dversion=$LEGACY_VERSION clean dist'
+      }
+      post {
+        always  { junit 'build/test-reports/*.xml' }
+        success { archiveArtifacts artifacts: 'dist/*.jar', fingerprint: true }
+      }
+    }
+  }
+}

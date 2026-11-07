@@ -1,0 +1,29 @@
+// Demo 12 - Rapports de tests et couverture (slides 32, 61 a 63)
+pipeline {
+  agent { label 'linux' }
+  tools { jdk 'jdk21'; maven 'maven-3.9' }
+  options { timestamps() }
+  stages {
+    stage('Build & Tests') {
+      steps {
+        // Maven ne s'arrete pas sur un test rouge : c'est Jenkins qui juge (UNSTABLE)
+        sh 'mvn -B -ntp clean verify -Dmaven.test.failure.ignore=true'
+      }
+      post {
+        always {
+          junit testResults: 'target/surefire-reports/TEST-*.xml, target/failsafe-reports/TEST-*.xml',
+                allowEmptyResults: false
+          recordCoverage(
+            tools: [[parser: 'JACOCO', pattern: 'target/site/jacoco/jacoco.xml']],
+            sourceCodeRetention: 'LAST_BUILD',
+            qualityGates: [
+              [threshold: 80.0, metric: 'LINE', baseline: 'PROJECT', criticality: 'UNSTABLE']
+            ])
+        }
+      }
+    }
+  }
+  post {
+    always { echo "Resultat : ${currentBuild.currentResult}" }
+  }
+}

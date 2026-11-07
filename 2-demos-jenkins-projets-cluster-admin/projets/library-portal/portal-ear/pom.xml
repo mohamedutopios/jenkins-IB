@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>fr.utopios</groupId>
+    <artifactId>library-portal</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>portal-ear</artifactId>
+  <packaging>ear</packaging>
+
+  <dependencies>
+    <dependency>
+      <groupId>fr.utopios</groupId>
+      <artifactId>portal-ejb</artifactId>
+      <version>${project.version}</version>
+      <type>ejb</type>
+    </dependency>
+    <dependency>
+      <groupId>fr.utopios</groupId>
+      <artifactId>portal-web</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-ear-plugin</artifactId>
+        <configuration>
+          <version>10</version>
+          <defaultLibBundleDir>lib</defaultLibBundleDir>
+          <skinnyWars>true</skinnyWars>
+          <modules>
+            <ejbModule>
+              <groupId>fr.utopios</groupId>
+              <artifactId>portal-ejb</artifactId>
+            </ejbModule>
+            <webModule>
+              <groupId>fr.utopios</groupId>
+              <artifactId>portal-web</artifactId>
+              <contextRoot>/library</contextRoot>
+            </webModule>
+          </modules>
+        </configuration>
+      </plugin>
+      <!-- Deploiement sur WildFly (slide 9) : nom stable, un redeploy ecrase -->
+      <plugin>
+        <groupId>org.wildfly.plugins</groupId>
+        <artifactId>wildfly-maven-plugin</artifactId>
+        <configuration>
+          <hostname>${wildfly.host}</hostname>
+          <port>9990</port>
+          <username>${env.WF_USR}</username>
+          <password>${env.WF_PSW}</password>
+          <name>library-portal.ear</name>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

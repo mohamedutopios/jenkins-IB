@@ -1,0 +1,67 @@
+// Pipeline de deploiement (demo 13) : appelee par le pipeline library-api-devsecops, ou lancee a la main.
+// Fichier ci/Jenkinsfile.deploy du depot library-api-devsecops.
+pipeline {
+  agent {
+    label 'devsecops'
+  }
+  options {
+    disableConcurrentBuilds()
+    timestamps()
+  }
+  parameters {
+    string(name: 'IMAGE', defaultValue: '', description: 'Image a deployer, par exemple library-api-devsecops:1.4.21')
+    choice(name: 'ENVIRONNEMENT', choices: ['recette', 'production'], description: 'Environnement cible')
+  }
+  environment {
+    CONTENEUR = "library-api-devsecops-${params.ENVIRONNEMENT}"
+    PORT = "${params.ENVIRONNEMENT == 'production' ? '8093' : '8092'}"
+  }
+  stages {
+    stage('Controles') {
+      steps {
+        script {
+          if (!params.IMAGE?.trim()) {
+            error('Parametre IMAGE obligatoire')
+          }
+        }
+        sh 'docker image inspect "$IMAGE" --format "Image trouvee : {{.Id}}"'
+      }
+    }
+    stage('Validation production') {
+      when {
+        beforeInput true
+        expression { params.ENVIRONNEMENT == 'production' }
+      }
+      input {
+        message 'Deployer en production ?'
+        ok 'Deployer'
+        submitter 'admin'
+      }
+      steps {
+        echo "Deploiement de ${params.IMAGE} en production approuve"
+      }
+    }
+    stage('Deploiement') {
+      steps {
+        sh '''
+          docker rm -f "$CONTENEUR" 2>/dev/null || true
+          docker run -d --name "$CONTENEUR" --network ci-formation -p "$PORT":8080 "$IMAGE"
+          for i in $(seq 1 30); do
+            curl -sf "http://$CONTENEUR:8080/actuator/health" && exit 0
+            sleep 2
+          done
+          exit 1
+        '''
+        script {
+          // Variable exportee : le pipeline appelant la lit dans buildVariables
+          env.URL_DEPLOYEE = "http://localhost:${env.PORT}"
+        }
+      }
+    }
+  }
+  post {
+    success {
+      echo "${params.IMAGE} deploye en ${params.ENVIRONNEMENT} : ${env.URL_DEPLOYEE}"
+    }
+  }
+}

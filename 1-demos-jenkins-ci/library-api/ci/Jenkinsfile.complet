@@ -1,0 +1,90 @@
+// Demo 17 - Pipeline complet du fil rouge (slides 78 et 79), adapte a la stack locale :
+// Kubernetes -> conteneur Docker "library-api-recette", Slack -> mail, registry -> image locale
+pipeline {
+  agent { label 'linux' }
+  tools { jdk 'jdk21'; maven 'maven-3.9' }
+  options {
+    timestamps(); timeout(time: 30, unit: 'MINUTES')
+    buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '10'))
+    disableConcurrentBuilds()
+    skipDefaultCheckout()                // le stage Checkout fait le checkout
+  }
+  environment {
+    APP_VERSION = "1.4.${BUILD_NUMBER}"
+    NEXUS       = credentials('nexus-deploy')
+  }
+  triggers { cron('H H(1-3) * * 1-5') }   // nightly en plus du webhook
+  stages {
+    stage('Checkout') {
+      steps {
+        script {
+          // checkout renvoie les variables Git (GIT_COMMIT, GIT_BRANCH...) :
+          // avec skipDefaultCheckout(), elles ne sont pas posees dans env automatiquement
+          def scmVars = checkout scm
+          env.GIT_COMMIT = scmVars.GIT_COMMIT
+          currentBuild.displayName = "#${BUILD_NUMBER} ${env.GIT_COMMIT.take(7)}"
+        }
+      }
+    }
+    stage('Build & Unit tests') {
+      steps { sh 'mvn -B -ntp -Drevision=$APP_VERSION clean verify -Dmaven.test.failure.ignore=true' }
+      post { always {
+        junit 'target/surefire-reports/TEST-*.xml, target/failsafe-reports/TEST-*.xml'
+        recordCoverage tools: [[parser: 'JACOCO', pattern: 'target/site/jacoco/jacoco.xml']]
+      } }
+    }
+    stage('Quality') {
+      when { not { changeRequest() } }
+      steps {
+        withSonarQubeEnv('sonarqube') {
+          sh 'mvn -B -ntp sonar:sonar -Dsonar.projectKey=fr.utopios:library-api -Dsonar.projectName=library-api'
+        }
+        timeout(time: 10, unit: 'MINUTES') { waitForQualityGate abortPipeline: true }
+      }
+    }
+    stage('Publish') {
+      when { branch 'main' }
+      steps {
+        configFileProvider([configFile(fileId: 'nexus-settings', variable: 'SETTINGS')]) {
+          sh 'mvn -B -ntp -s $SETTINGS -Drevision=$APP_VERSION -DskipTests deploy'
+        }
+        archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+        sh 'docker build --build-arg JAR=target/library-api-$APP_VERSION.jar -t library-api:$APP_VERSION .'
+      }
+    }
+    stage('Deploy recette') {
+      when { branch 'main' }
+      options { lock('env-recette') }
+      steps {
+        sh '''
+          docker rm -f library-api-recette 2>/dev/null || true
+          docker run -d --name library-api-recette --network ci-formation -p 8090:8080 library-api:$APP_VERSION
+        '''
+        sh 'for i in $(seq 1 30); do curl -sf http://library-api-recette:8080/actuator/health && exit 0; sleep 2; done; exit 1'
+      }
+    }
+    stage('Production') {
+      when { branch 'main' }
+      steps {
+        timeout(time: 24, unit: 'HOURS') {
+          input message: "Deployer ${APP_VERSION} en production ?", ok: 'Deployer',
+                submitter: 'admin,release1'
+        }
+        milestone 100
+        build job: 'library/deploy-prod',
+              parameters: [string(name: 'ARTIFACT_VERSION', value: env.APP_VERSION)]
+      }
+    }
+  }
+  post {
+    failure  { emailext subject: "[Jenkins] ECHEC ${JOB_NAME} #${BUILD_NUMBER}",
+                        body: '${SCRIPT, template="groovy-html.template"}', mimeType: 'text/html',
+                        recipientProviders: [culprits(), requestor()], to: 'dev-team@example.com' }
+    unstable { emailext subject: "[Jenkins] INSTABLE ${JOB_NAME} #${BUILD_NUMBER}",
+                        body: '${FAILED_TESTS}', to: 'dev-team@example.com',
+                        recipientProviders: [culprits()] }
+    fixed    { emailext subject: "[Jenkins] REPARE ${JOB_NAME} #${BUILD_NUMBER}",
+                        body: '${BUILD_URL}', to: 'dev-team@example.com' }
+    cleanup  { cleanWs() }
+  }
+}

@@ -1,0 +1,86 @@
+// Corrige du TP Gradle : Jenkinsfile final du depot formation/todo-api
+pipeline {
+  agent { label 'linux' }
+
+  options {
+    buildDiscarder(logRotator(numToKeepStr: '10'))
+    timeout(time: 20, unit: 'MINUTES')
+    disableConcurrentBuilds()
+    timestamps()
+  }
+
+  parameters {
+    booleanParam(name: 'PUBLIER', defaultValue: false,
+                 description: 'Publier le JAR dans le registre Maven de Gitea (branche main uniquement)')
+  }
+
+  environment {
+    APP_VERSION = "1.0.${BUILD_NUMBER}"
+  }
+
+  stages {
+    stage('Build & Test') {
+      steps {
+        withGradle {
+          sh './gradlew --no-daemon clean build -Pversion=$APP_VERSION'
+        }
+      }
+      post {
+        always {
+          junit 'build/test-results/test/*.xml'
+          recordCoverage tools: [[parser: 'JACOCO', pattern: 'build/reports/jacoco/test/jacocoTestReport.xml']],
+                         qualityGates: [[metric: 'LINE', threshold: 70.0, criticality: 'UNSTABLE']]
+          recordIssues tools: [checkStyle(pattern: 'build/reports/checkstyle/*.xml'),
+                               spotBugs(pattern: 'build/reports/spotbugs/*.xml')],
+                       qualityGates: [[threshold: 5, type: 'TOTAL', criticality: 'UNSTABLE']]
+        }
+      }
+    }
+
+    stage('Validation') {
+      when {
+        allOf { branch 'main'; expression { params.PUBLIER } }
+      }
+      steps {
+        mattermostSend color: '#439FE0',
+                       message: "En attente de validation : ${currentBuild.fullDisplayName} (<${env.BUILD_URL}input/|valider>)"
+        timeout(time: 15, unit: 'MINUTES') {
+          input message: "Publier todo-api ${env.APP_VERSION} ?", ok: 'Publier'
+        }
+      }
+    }
+
+    stage('Publish') {
+      when {
+        allOf { branch 'main'; expression { params.PUBLIER } }
+      }
+      environment {
+        GITEA_PKG = credentials('gitea-packages')
+      }
+      steps {
+        withGradle {
+          sh './gradlew --no-daemon publish -Pversion=$APP_VERSION -x test'
+        }
+      }
+    }
+  }
+
+  post {
+    success {
+      mattermostSend color: 'good',
+                     message: ":white_check_mark: ${currentBuild.fullDisplayName} reussi (<${env.BUILD_URL}|ouvrir>)"
+    }
+    unstable {
+      mattermostSend color: 'warning',
+                     message: ":warning: ${currentBuild.fullDisplayName} instable : seuil de couverture ou de qualite depasse (<${env.BUILD_URL}|ouvrir>)"
+    }
+    failure {
+      mattermostSend color: 'danger',
+                     message: ":x: ${currentBuild.fullDisplayName} en echec (<${env.BUILD_URL}console|console>)"
+    }
+    fixed {
+      mattermostSend color: 'good',
+                     message: ":tada: ${currentBuild.fullDisplayName} : la branche est reparee"
+    }
+  }
+}

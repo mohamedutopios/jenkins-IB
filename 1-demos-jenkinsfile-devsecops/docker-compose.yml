@@ -1,0 +1,35 @@
+# Agent outille de la suite "Jenkinsfile DevSecOps".
+# La stack de la partie 1 (../1-demos-jenkins-ci, fin de DEMOS-v2.md) doit tourner :
+# cet agent rejoint son reseau "ci-formation" et reprend sa cle SSH (meme credential agent-ssh-key).
+#
+#   docker compose up -d --build     -> devsecops-1
+
+name: jenkins-devsecops
+
+services:
+
+  # Agent SSH outille : JDK 21, Git, client Docker, Trivy, Gitleaks, Hadolint, Semgrep
+  devsecops-1:
+    build: ./agent
+    image: formation/jenkins-agent-devsecops:jdk21
+    container_name: devsecops-1
+    hostname: devsecops-1
+    # JENKINS_AGENT_SSH_PUBKEY : la cle publique deja autorisee sur linux-1 (partie 1, demo 0)
+    env_file: ../1-demos-jenkins-ci/.env
+    volumes:
+      # Socket Docker du poste : construction et scan de l'image, deploiement en recette
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Cache Maven : les dependances ne sont telechargees qu'une fois (et Trivy le lit)
+      - m2_cache:/home/jenkins/.m2
+      # Caches des outils : base de vulnerabilites Trivy, regles Semgrep
+      - outils_cache:/home/jenkins/.cache
+    restart: unless-stopped
+
+networks:
+  default:
+    name: ci-formation
+    external: true
+
+volumes:
+  m2_cache: {}
+  outils_cache: {}

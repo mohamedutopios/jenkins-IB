@@ -1,0 +1,4 @@
+notification:
+  github:
+    # jeton du compte de service qui commente les PR
+    token: ghp_huG8GP38g4o5MNJAYKJ1UXXFWXLCpaNfhs0g

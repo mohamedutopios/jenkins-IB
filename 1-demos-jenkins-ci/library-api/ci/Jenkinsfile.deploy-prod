@@ -1,0 +1,23 @@
+// Job CD "deploy-prod" (demo 17) : deploie une version deja construite, sans rebuild
+pipeline {
+  agent { label 'linux' }
+  parameters {
+    string(name: 'ARTIFACT_VERSION', defaultValue: '', description: 'Version a deployer (ex. 1.4.12)')
+  }
+  stages {
+    stage('Deploy production') {
+      options { lock('env-production') }
+      steps {
+        script {
+          if (!params.ARTIFACT_VERSION?.trim()) { error('ARTIFACT_VERSION est obligatoire') }
+          currentBuild.displayName = "#${BUILD_NUMBER} v${params.ARTIFACT_VERSION}"
+        }
+        sh '''
+          docker rm -f library-api-prod 2>/dev/null || true
+          docker run -d --name library-api-prod --network ci-formation -p 8091:8080 library-api:$ARTIFACT_VERSION
+        '''
+        sh 'for i in $(seq 1 30); do curl -sf http://library-api-prod:8080/actuator/health && exit 0; sleep 2; done; exit 1'
+      }
+    }
+  }
+}

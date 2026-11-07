@@ -1,0 +1,37 @@
+// library-core : publie 2.3.0-SNAPSHOT depuis main, 2.3.0 depuis le tag v2.3.0 (slides 5, 16)
+pipeline {
+  agent { label 'linux' }
+  tools { jdk 'jdk21'; maven 'maven-3.9' }
+  options {
+    timestamps()
+    // autorise les jobs du dossier library a copier les artefacts (copyArtifacts, slide 5)
+    copyArtifactPermission('library/*')
+  }
+  environment { NEXUS = credentials('nexus-deploy') }
+  stages {
+    stage('Version') {
+      steps {
+        script {
+          // build d'un tag v2.3.0 -> 2.3.0 ; sinon la version SNAPSHOT du POM
+          env.REVISION = env.TAG_NAME ? env.TAG_NAME.replaceFirst(/^v/, '') : '2.3.0-SNAPSHOT'
+          currentBuild.displayName = "#${BUILD_NUMBER} ${env.REVISION}"
+        }
+      }
+    }
+    stage('Build & Test') {
+      steps { sh 'mvn -B -ntp -Drevision=$REVISION clean verify' }
+      post {
+        always  { junit 'target/surefire-reports/TEST-*.xml' }
+        success { archiveArtifacts artifacts: 'target/library-core-*.jar', fingerprint: true }
+      }
+    }
+    stage('Publish') {
+      when { anyOf { branch 'main'; buildingTag() } }
+      steps {
+        configFileProvider([configFile(fileId: 'nexus-settings', variable: 'SETTINGS')]) {
+          sh 'mvn -B -ntp -s $SETTINGS -Drevision=$REVISION -DskipTests deploy'
+        }
+      }
+    }
+  }
+}

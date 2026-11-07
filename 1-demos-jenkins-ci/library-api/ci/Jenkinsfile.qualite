@@ -1,0 +1,39 @@
+// Demo 15 - Analyse qualite SonarQube et Quality Gate (slides 71 a 73)
+pipeline {
+  agent { label 'linux' }
+  tools { jdk 'jdk21'; maven 'maven-3.9' }
+  options { timestamps() }
+  stages {
+    stage('Build & Tests') {
+      steps { sh 'mvn -B -ntp clean verify' }
+      post {
+        always {
+          junit 'target/surefire-reports/TEST-*.xml'
+          // Warnings NG : avertissements du compilateur et de la console Maven
+          recordIssues tools: [java(), mavenConsole()]
+        }
+      }
+    }
+    stage('SonarQube analysis') {
+      steps {
+        withSonarQubeEnv('sonarqube') {          // injecte SONAR_HOST_URL et le token
+          sh '''
+            mvn -B -ntp sonar:sonar \
+              -Dsonar.projectKey=fr.utopios:library-api \
+              -Dsonar.projectName=library-api \
+              -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+              -Dsonar.junit.reportPaths=target/surefire-reports
+          '''
+        }
+      }
+    }
+    stage('Quality Gate') {
+      steps {
+        timeout(time: 10, unit: 'MINUTES') {
+          // attend le webhook SonarQube -> FAILURE si le gate est rouge
+          waitForQualityGate abortPipeline: true
+        }
+      }
+    }
+  }
+}

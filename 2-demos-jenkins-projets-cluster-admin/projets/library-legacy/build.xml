@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- library-legacy : ancien module construit avec Ant (slides 10 et 11) -->
+<project name="library-legacy" default="dist" basedir=".">
+  <property name="src" location="src"/>
+  <property name="build" location="build"/>
+  <property name="dist" location="dist"/>
+  <property name="version" value="1.0.0"/>        <!-- surcharge par -Dversion -->
+  <path id="classpath"><fileset dir="lib" includes="*.jar"/></path>
+
+  <target name="clean">
+    <delete dir="${build}"/>
+    <delete dir="${dist}"/>
+  </target>
+
+  <target name="compile">
+    <mkdir dir="${build}/classes"/>
+    <javac srcdir="${src}/main" destdir="${build}/classes" classpathref="classpath"
+           release="21" includeantruntime="false" debug="true"/>
+  </target>
+
+  <target name="test" depends="compile">
+    <mkdir dir="${build}/test-classes"/>
+    <mkdir dir="${build}/test-reports"/>
+    <javac srcdir="${src}/test" destdir="${build}/test-classes" release="21" includeantruntime="false">
+      <classpath>
+        <path refid="classpath"/>
+        <pathelement location="${build}/classes"/>
+      </classpath>
+    </javac>
+    <junit printsummary="yes" haltonfailure="no" failureproperty="tests.failed">
+      <classpath>
+        <path refid="classpath"/>
+        <pathelement location="${build}/classes"/>
+        <pathelement location="${build}/test-classes"/>
+      </classpath>
+      <formatter type="xml"/>                     <!-- format JUnit XML lisible par Jenkins -->
+      <batchtest todir="${build}/test-reports">
+        <fileset dir="${src}/test" includes="**/*Test.java"/>
+      </batchtest>
+    </junit>
+  </target>
+
+  <target name="dist" depends="test">
+    <mkdir dir="${dist}"/>
+    <jar destfile="${dist}/library-legacy-${version}.jar" basedir="${build}/classes"/>
+    <fail if="tests.failed" message="Tests en echec"/>
+  </target>
+</project>

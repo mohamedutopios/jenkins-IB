@@ -1,0 +1,9 @@
+{
+  "id": "bruno.petit",
+  "email": "bruno.petit@formation.local",
+  "password": "Bruno-2026",
+  "displayName": "Bruno Petit",
+  "firstName": "Bruno",
+  "lastName": "Petit",
+  "groups": ["library-dev"]
+}

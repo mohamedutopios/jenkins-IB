@@ -1,0 +1,61 @@
+# Demo 18 : les comptes viennent de l'annuaire lldap, les droits sont donnes a ses groupes.
+# Applique par Manage Jenkins -> Configuration as Code, en une seule fois :
+# l'authentification et l'autorisation changent ensemble, sans fenetre ou personne n'est admin.
+#
+# ${LDAP_BIND_PASSWORD} est lu dans /run/secrets/LDAP_BIND_PASSWORD (voir DEMOS.md, demo 18) :
+# le mot de passe n'est jamais ecrit dans ce fichier versionne.
+
+jenkins:
+  securityRealm:
+    ldap:
+      configurations:
+        - server: "ldap://lldap:3890"
+          rootDN: "dc=formation,dc=local"
+          # Compte de service en lecture seule, utilise pour chercher les comptes et les groupes
+          managerDN: "uid=jenkins-bind,ou=people,dc=formation,dc=local"
+          managerPasswordSecret: "${LDAP_BIND_PASSWORD}"
+          userSearchBase: "ou=people"
+          userSearch: "uid={0}"
+          groupSearchBase: "ou=groups"
+          groupSearchFilter: "(&(objectClass=groupOfUniqueNames)(cn={0}))"
+          groupMembershipStrategy:
+            fromGroupSearch:
+              filter: "(member={0})"
+          displayNameAttributeName: "cn"
+          mailAddressAttributeName: "mail"
+      userIdStrategy: "caseInsensitive"
+      groupIdStrategy: "caseInsensitive"
+
+  authorizationStrategy:
+    roleBased:
+      roles:
+        global:
+          - name: "admin"
+            permissions:
+              - "Overall/Administer"
+            entries:
+              - group: "jenkins-admins"
+          - name: "reader"
+            permissions:
+              - "Overall/Read"
+            entries:
+              - group: "authenticated"
+        items:
+          - name: "library-dev"
+            pattern: "library(/.*)?"
+            permissions:
+              - "Job/Build"
+              - "Job/Cancel"
+              - "Job/Configure"
+              - "Job/Read"
+              - "Job/Workspace"
+              - "Run/Replay"
+            entries:
+              - group: "library-dev"
+          - name: "library-release"
+            pattern: "library(/deploy)?"
+            permissions:
+              - "Job/Build"
+              - "Job/Read"
+            entries:
+              - group: "release-managers"

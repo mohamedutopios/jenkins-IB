@@ -1,0 +1,87 @@
+plugins {
+    id 'java'
+    id 'jacoco'
+    id 'checkstyle'
+    id 'maven-publish'
+    id 'org.springframework.boot' version '3.5.6'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.github.spotbugs' version '6.4.2'
+}
+
+group = 'fr.utopios'
+// Version injectee par Jenkins : ./gradlew build -Pversion=1.0.12
+if (version == 'unspecified') {
+    version = '1.0.0-SNAPSHOT'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+    // Rapports JUnit XML : build/test-results/test/*.xml (lus par le step junit)
+    finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        // build/reports/jacoco/test/jacocoTestReport.xml (lu par recordCoverage)
+        xml.required = true
+        html.required = true
+    }
+}
+
+checkstyle {
+    toolVersion = '10.26.1'
+    // Les ecarts vont dans le rapport sans faire echouer Gradle : c'est Jenkins qui decide
+    ignoreFailures = true
+}
+
+spotbugs {
+    ignoreFailures = true
+}
+
+tasks.withType(com.github.spotbugs.snom.SpotBugsTask).configureEach {
+    reports {
+        // build/reports/spotbugs/main.xml (lu par recordIssues)
+        xml.required = true
+        html.required = false
+    }
+}
+
+// On publie le JAR executable de Spring Boot (bootJar)
+publishing {
+    publications {
+        maven(MavenPublication) {
+            artifact tasks.named('bootJar')
+        }
+    }
+    repositories {
+        maven {
+            name = 'gitea'
+            url = uri(findProperty('giteaMavenUrl') ?: 'http://gitea:3000/api/packages/formation/maven')
+            // Gitea du kit en HTTP (reseau Docker local) : Gradle exige ce choix explicite
+            allowInsecureProtocol = true
+            // Fournis par Jenkins : environment { GITEA_PKG = credentials('gitea-packages') }
+            credentials {
+                username = System.getenv('GITEA_PKG_USR')
+                password = System.getenv('GITEA_PKG_PSW')
+            }
+        }
+    }
+}

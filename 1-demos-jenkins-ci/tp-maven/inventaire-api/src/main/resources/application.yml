@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: inventaire-api
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  info:
+    env:
+      enabled: true
+info:
+  application:
+    version: "@project.version@"

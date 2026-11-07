@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Démo 8 : schéma</title><style>
+:root{--fond:#f7f6f2;--surface:#ffffff;--texte:#1f2328;--doux:#5b636e;--ligne:#d5d8dc;
+--orange:#c2571a;--orange-f:#fbe8db;--bleu:#2a62b8;--bleu-f:#e3ecf9;--gris:#8a929b;--gris-f:#f1f2f4;
+--vert:#2f7d43;--vert-f:#dff1e3;--rouge:#b3261e;--rouge-f:#f8dedc;--jaune:#9a6b00;--jaune-f:#fbefc9;--code:#eef0f3}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--fond:#16181c;--surface:#1f2228;--texte:#e6e8eb;--doux:#a2a9b3;--ligne:#3a3f47;
+--orange:#f0904f;--orange-f:#3f2616;--bleu:#7aa7ec;--bleu-f:#1b2a42;--gris:#8d949d;--gris-f:#262a31;
+--vert:#6cc283;--vert-f:#1b3323;--rouge:#f08a82;--rouge-f:#3d1e1c;--jaune:#e6be5a;--jaune-f:#3a3016;--code:#2a2e35}}
+:root[data-theme="dark"]{--fond:#16181c;--surface:#1f2228;--texte:#e6e8eb;--doux:#a2a9b3;--ligne:#3a3f47;
+--orange:#f0904f;--orange-f:#3f2616;--bleu:#7aa7ec;--bleu-f:#1b2a42;--gris:#8d949d;--gris-f:#262a31;
+--vert:#6cc283;--vert-f:#1b3323;--rouge:#f08a82;--rouge-f:#3d1e1c;--jaune:#e6be5a;--jaune-f:#3a3016;--code:#2a2e35}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fond);color:var(--texte);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1180px;margin:0 auto;padding:24px 16px 64px}
+a{color:var(--bleu)}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+.fil{font-size:.9rem;color:var(--doux);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-size:1.8rem;margin:.3em 0 .1em}
+.meta{color:var(--doux);margin:0 0 1.2em}
+h2{font-size:1.25rem;margin:2em 0 .6em;padding-bottom:.3em;border-bottom:1px solid var(--ligne)}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.carton{background:var(--surface);border:1px solid var(--ligne);border-radius:12px;padding:14px 18px}
+.carton h3{margin:0 0 .4em;font-size:1rem}
+.carton p{margin:0}
+.figure{background:var(--surface);border:1px solid var(--ligne);border-radius:12px;padding:12px;overflow-x:auto}
+svg.carte{width:100%;min-width:760px;height:auto;display:block}
+svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.reseau{fill:none;stroke:var(--ligne);stroke-width:1.5;stroke-dasharray:6 5}
+.reseau-t{fill:var(--doux);font-size:12px}
+.poste{fill:none;stroke:var(--ligne);stroke-width:1.5}
+.poste-t{fill:var(--doux);font-size:13px;font-weight:600}
+.comp rect{stroke-width:1.6}
+.comp .c-t{font-size:14px;font-weight:700;fill:var(--texte)}
+.comp .c-l{font-size:12px;fill:var(--doux)}
+.st-nouveau rect{fill:var(--orange-f);stroke:var(--orange);stroke-width:2.4}
+.st-utilise rect{fill:var(--bleu-f);stroke:var(--bleu)}
+.st-inchange rect{fill:var(--gris-f);stroke:var(--gris)}
+.st-absent rect{fill:none;stroke:var(--gris);stroke-dasharray:5 4}
+.st-absent text{opacity:.6}
+.lien{fill:none;stroke:var(--orange);stroke-width:2.2}
+.lien-ancien{fill:none;stroke:var(--gris);stroke-width:1.2;stroke-dasharray:4 4;opacity:.75}
+.tete{fill:var(--orange)} .tete-g{fill:var(--gris)}
+.proto{font-size:11.5px;fill:var(--orange);font-weight:600;paint-order:stroke;stroke:var(--surface);stroke-width:4px}
+.num circle{stroke:var(--surface);stroke-width:2}
+.num text{font-size:12px;font-weight:700;fill:#fff}
+.num-lien circle,.num-int circle{fill:var(--orange)}
+.num-nav circle{fill:var(--bleu)}
+.num-term circle{fill:#3d434b}
+.legende{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:.88rem;color:var(--doux);margin:10px 4px 0}
+.legende span{display:inline-flex;align-items:center;gap:6px}
+.pastille{width:14px;height:14px;border-radius:4px;border:2px solid;display:inline-block}
+.p-nouveau{background:var(--orange-f);border-color:var(--orange)}
+.p-utilise{background:var(--bleu-f);border-color:var(--bleu)}
+.p-inchange{background:var(--gris-f);border-color:var(--gris)}
+.pastille.p-absent,.d.p-absent{border-style:dashed;border-color:var(--gris)}
+.rond{width:18px;height:18px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.r-nav{background:var(--bleu)} .r-term{background:#3d434b} .r-lien,.r-int{background:var(--orange)}
+ol.flux{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:6px}
+ol.flux li{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--ligne);border-radius:8px;padding:7px 12px}
+ol.flux .rond{margin-top:3px}
+ol.flux .ou{color:var(--doux);font-size:.85rem;white-space:nowrap;min-width:150px}
+.etat{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.etat .carton h3{display:flex;justify-content:space-between}
+.cat{margin:.6em 0 .2em;font-size:.8rem;text-transform:uppercase;letter-spacing:.04em;color:var(--doux)}
+.cat:first-of-type{margin-top:0}
+.item{font-size:.9rem;padding:3px 8px;border-radius:6px;margin:2px 0;border-left:3px solid var(--gris);background:var(--gris-f)}
+.item.nouveau{border-left-color:var(--orange);background:var(--orange-f)}
+.item.modifie{border-left-color:var(--bleu);background:var(--bleu-f)}
+.item .tag{font-size:.72rem;font-weight:700;color:var(--orange);margin-left:6px;text-transform:uppercase}
+.item.modifie .tag{color:var(--bleu)}
+.vide{color:var(--doux);font-style:italic;font-size:.9rem}
+ol.deroule{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;counter-reset:d}
+ol.deroule li{counter-increment:d;background:var(--surface);border:1px solid var(--ligne);border-radius:10px;padding:10px 12px;position:relative}
+ol.deroule li::before{content:counter(d);position:absolute;top:-10px;left:10px;background:var(--texte);color:var(--fond);border-radius:10px;font-size:.75rem;font-weight:700;padding:0 7px}
+ol.deroule b{display:block;margin-top:4px}
+ol.deroule span{font-size:.88rem;color:var(--doux)}
+svg.pipe{height:auto;display:block;max-width:100%}
+.pipe .stage rect{fill:var(--bleu-f);stroke:var(--bleu);stroke-width:1.6}
+.pipe .stage.cond rect{fill:var(--surface);stroke-dasharray:6 4}
+.pipe .post rect{fill:var(--gris-f);stroke:var(--gris);stroke-width:1.4}
+.pipe .s-t{font-size:13.5px;font-weight:700;fill:var(--texte)}
+.pipe .s-l{font-size:11.5px;fill:var(--doux);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.pipe .s-c{font-size:11.5px;fill:var(--orange);font-weight:600}
+.pipe .fleche{stroke:var(--gris);stroke-width:1.6}
+.legende-pipe{font-size:.9rem;color:var(--doux);margin:0 0 6px}
+.bande{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch}
+.bande .b{flex:1 1 150px;border-radius:10px;padding:10px 12px;border:1.6px solid}
+.bande .b b{display:block}
+.bande .b span{font-size:.88rem}
+.b.ok{background:var(--vert-f);border-color:var(--vert)} .b.ko{background:var(--rouge-f);border-color:var(--rouge)}
+.b.warn{background:var(--jaune-f);border-color:var(--jaune)} .b.gris{background:var(--gris-f);border-color:var(--gris)}
+table{border-collapse:collapse;width:100%;background:var(--surface);border:1px solid var(--ligne);border-radius:10px;overflow:hidden;font-size:.92rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--ligne);vertical-align:top}
+th{background:var(--gris-f)}
+blockquote p{margin:.3em 0}
+blockquote pre{background:var(--code);padding:10px 12px;border-radius:6px;overflow-x:auto;font-size:.85rem}
+blockquote{margin:0;background:var(--surface);border:1px solid var(--ligne);border-left:4px solid var(--orange);border-radius:8px;padding:12px 16px}
+.nav-bas{display:flex;justify-content:space-between;margin-top:36px;gap:12px;flex-wrap:wrap}
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.grille a{text-decoration:none;color:inherit}
+.grille .carton:hover{border-color:var(--bleu)}
+.grille .n{font-size:.8rem;color:var(--doux)}
+.matrice td.c{text-align:center}
+.d{display:inline-block;width:14px;height:14px;border-radius:4px;border-width:2px;border-style:solid}
+@media (max-width:760px){.duo,.etat{grid-template-columns:1fr}h1{font-size:1.45rem}ol.flux .ou{min-width:0}ol.flux li{flex-wrap:wrap}}
+</style></head>
+<body><main>
+<div class="fil"><a href="index.html">Démos Jenkins CI · schémas</a><span><a href="demo-07.html">← Démo 7</a> · <a href="demo-09.html">Démo 9 →</a></span></div>
+<h1>Démo 8 — Job Freestyle library-api</h1>
+<p class="meta">Slides : 25, 54, 56, 58 · Durée : 20 min · Prérequis : démo 7</p>
+
+<div class="duo">
+<div class="carton"><h3>Pourquoi cette démo</h3><p>La slide 54 construit le fil rouge avec un job Freestyle : chaque brique (source, déclencheur, environnement, step Maven, actions post-build) y est une section visible de l'UI. C'est la meilleure façon de voir physiquement ce qu'un Jenkinsfile exprimera ensuite en quelques lignes. Le job est rangé dans un <strong>Folder</strong> <code>library</code> (slide 25), qui servira aussi pour les habilitations.</p></div>
+<div class="carton"><h3>Ce qu'elle montre</h3><p>Un clone Git authentifié, l'installation de Maven au premier build, la version injectée par Jenkins (<code>-Drevision</code>), la publication des rapports Surefire et l'archivage du JAR, puis un build déclenché par <strong>Poll SCM</strong> après une modification faite dans Gitea.</p></div>
+</div>
+
+<h2>Vue d'ensemble : ce qui bouge dans la stack</h2>
+<div class="figure"><svg viewBox="0 0 1130 610" class="carte" role="img" aria-label="Carte de la stack, démo 8" xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="fl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="tete"/></marker><marker id="flg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="tete-g"/></marker></defs>
+<rect x="230" y="20" width="890" height="580" rx="16" class="reseau"/>
+<text x="1110" y="594" class="reseau-t" text-anchor="end">réseau Docker ci-formation</text>
+<rect x="20" y="30" width="180" height="340" rx="14" class="poste"/>
+<text x="110.0" y="54" class="poste-t" text-anchor="middle">Poste du stagiaire</text>
+<polyline points="520,205 215,205 215,470 200,470" class="lien-ancien" marker-end="url(#flg)"/>
+<polyline points="640,230 640,320" class="lien" marker-end="url(#fl)"/>
+<polyline points="560,320 560,285 380,285 380,180" class="lien" marker-end="url(#fl)"/>
+<polyline points="520,478 490,478 490,535 200,535" class="lien" marker-end="url(#fl)"/>
+<polyline points="520,140 470,140" class="lien" marker-end="url(#fl)"/>
+<g class="comp st-utilise">
+<rect x="35" y="75" width="150" height="70" rx="10"/>
+<text x="110.0" y="97" class="c-t" text-anchor="middle">Navigateur</text>
+<text x="110.0" y="117" class="c-l" text-anchor="middle">localhost:8080, :3000…</text>
+</g>
+<g class="comp st-inchange">
+<rect x="35" y="255" width="150" height="70" rx="10"/>
+<text x="110.0" y="277" class="c-t" text-anchor="middle">Terminal</text>
+<text x="110.0" y="297" class="c-l" text-anchor="middle">docker, curl, scripts/</text>
+</g>
+<g class="comp st-utilise">
+<rect x="20" y="420" width="180" height="120" rx="10"/>
+<text x="110.0" y="442" class="c-t" text-anchor="middle">Internet</text>
+<text x="110.0" y="462" class="c-l" text-anchor="middle">updates.jenkins.io</text>
+<text x="110.0" y="479" class="c-l" text-anchor="middle">Maven Central, images</text>
+</g>
+<g class="comp st-utilise">
+<rect x="260" y="55" width="210" height="125" rx="10"/>
+<text x="365.0" y="77" class="c-t" text-anchor="middle">Gitea (serveur Git)</text>
+<text x="365.0" y="97" class="c-l" text-anchor="middle">formation/library-api (privé)</text>
+<text x="365.0" y="114" class="c-l" text-anchor="middle">jeton jenkins (lecture)</text>
+</g>
+<g class="comp st-nouveau">
+<rect x="520" y="50" width="290" height="180" rx="10"/>
+<text x="665.0" y="72" class="c-t" text-anchor="middle">Jenkins (controller)</text>
+<text x="665.0" y="92" class="c-l" text-anchor="middle">2.580.2 LTS · JDK 21</text>
+<text x="665.0" y="109" class="c-l" text-anchor="middle">built-in : 0 executor</text>
+<text x="665.0" y="126" class="c-l" text-anchor="middle">tools : jdk21, maven-3.9</text>
+<text x="665.0" y="143" class="c-l" text-anchor="middle">credentials : agent-ssh-key, gitea-token</text>
+</g>
+<g class="comp st-inchange">
+<rect x="870" y="50" width="220" height="85" rx="10"/>
+<text x="980.0" y="72" class="c-t" text-anchor="middle">Mailpit (SMTP de test)</text>
+<text x="980.0" y="92" class="c-l" text-anchor="middle">SMTP mailpit:1025</text>
+<text x="980.0" y="109" class="c-l" text-anchor="middle">boîte web localhost:8025</text>
+</g>
+<g class="comp st-absent">
+<rect x="870" y="175" width="220" height="90" rx="10"/>
+<text x="980.0" y="197" class="c-t" text-anchor="middle">Nexus</text>
+<text x="980.0" y="217" class="c-l" text-anchor="middle">démarré à la démo 14</text>
+</g>
+<g class="comp st-absent">
+<rect x="870" y="300" width="220" height="90" rx="10"/>
+<text x="980.0" y="322" class="c-t" text-anchor="middle">SonarQube</text>
+<text x="980.0" y="342" class="c-l" text-anchor="middle">démarré à la démo 15</text>
+</g>
+<g class="comp st-utilise">
+<rect x="520" y="320" width="290" height="170" rx="10"/>
+<text x="665.0" y="342" class="c-t" text-anchor="middle">linux-1 (agent SSH)</text>
+<text x="665.0" y="362" class="c-l" text-anchor="middle">JDK 21, Git, client Docker</text>
+<text x="665.0" y="379" class="c-l" text-anchor="middle">labels : linux java21 maven</text>
+<text x="665.0" y="396" class="c-l" text-anchor="middle">2 executors · /home/jenkins/agent</text>
+<text x="665.0" y="413" class="c-l" text-anchor="middle">cache ~/.m2 (volume m2_cache)</text>
+</g>
+<g class="comp st-inchange">
+<rect x="260" y="400" width="210" height="110" rx="10"/>
+<text x="365.0" y="422" class="c-t" text-anchor="middle">Docker du poste</text>
+<text x="365.0" y="442" class="c-l" text-anchor="middle">moteur Docker du poste</text>
+<text x="365.0" y="459" class="c-l" text-anchor="middle">socket /var/run/docker.sock</text>
+</g>
+<g class="comp st-absent">
+<rect x="870" y="430" width="105" height="90" rx="10"/>
+<text x="922.5" y="452" class="c-t" text-anchor="middle">recette</text>
+<text x="922.5" y="472" class="c-l" text-anchor="middle">pas démarré</text>
+<text x="922.5" y="489" class="c-l" text-anchor="middle">(démo 14)</text>
+</g>
+<g class="comp st-absent">
+<rect x="985" y="430" width="105" height="90" rx="10"/>
+<text x="1037.5" y="452" class="c-t" text-anchor="middle">production</text>
+<text x="1037.5" y="472" class="c-l" text-anchor="middle">pas démarré</text>
+<text x="1037.5" y="489" class="c-l" text-anchor="middle">(démo 14)</text>
+</g>
+<g class="num num-lien"><circle cx="640.0" cy="275.0" r="10"/><text x="640.0" y="279.0" text-anchor="middle">2</text></g>
+<text x="654.0" y="279.0" class="proto">SSH</text>
+<g class="num num-lien"><circle cx="470.0" cy="285.0" r="10"/><text x="470.0" y="289.0" text-anchor="middle">3</text></g>
+<text x="470.0" y="271.0" class="proto" text-anchor="middle">git clone</text>
+<g class="num num-lien"><circle cx="345.0" cy="535.0" r="10"/><text x="345.0" y="539.0" text-anchor="middle">4</text></g>
+<text x="345.0" y="521.0" class="proto" text-anchor="middle">HTTPS</text>
+<g class="num num-lien"><circle cx="495.0" cy="140.0" r="10"/><text x="495.0" y="144.0" text-anchor="middle">7</text></g>
+<text x="495.0" y="126.0" class="proto" text-anchor="middle">lecture Git</text>
+<g class="num num-nav"><circle cx="775" cy="50" r="10"/><text x="775" y="54" text-anchor="middle">1</text></g>
+<g class="num num-int"><circle cx="798" cy="50" r="10"/><text x="798" y="54" text-anchor="middle">5</text></g>
+<g class="num num-nav"><circle cx="458" cy="55" r="10"/><text x="458" y="59" text-anchor="middle">6</text></g>
+</svg></div>
+<p class="legende">
+<span><span class="pastille p-nouveau"></span>créé ou configuré dans cette démo</span>
+<span><span class="pastille p-utilise"></span>utilisé</span>
+<span><span class="pastille p-inchange"></span>inchangé</span>
+<span><span class="pastille p-absent"></span>pas encore démarré</span>
+<span><span class="rond r-nav">1</span>action dans le navigateur</span>
+<span><span class="rond r-term">1</span>commande dans le terminal</span>
+<span><span class="rond r-lien">1</span>échange entre conteneurs (en gris pointillé : liaisons des démos précédentes)</span>
+</p>
+<ol class="flux">
+<li><span class="rond r-nav">1</span><span class="ou">navigateur → Jenkins</span><span>dossier library, puis job library-api-freestyle : Git, Poll SCM, Maven, post-build</span></li>
+<li><span class="rond r-lien">2</span><span class="ou">Jenkins → linux-1</span><span>Build Now : le build part sur linux-1</span></li>
+<li><span class="rond r-lien">3</span><span class="ou">linux-1 → Gitea</span><span>clone authentifié par gitea-token</span></li>
+<li><span class="rond r-lien">4</span><span class="ou">linux-1 → Internet</span><span>premier build : dépendances Maven téléchargées puis gardées dans ~/.m2</span></li>
+<li><span class="rond r-int">5</span><span class="ou">dans Jenkins</span><span>rapports Surefire publiés, library-api-1.4.&lt;n&gt;.jar archivé avec empreinte</span></li>
+<li><span class="rond r-nav">6</span><span class="ou">navigateur → Gitea</span><span>ajout de README.md sur main</span></li>
+<li><span class="rond r-lien">7</span><span class="ou">Jenkins → Gitea</span><span>Poll SCM voit le commit : Started by an SCM change</span></li>
+</ol>
+
+<h2>Avant / après : l'état de Jenkins et des services</h2>
+<div class="etat">
+<div class="carton"><h3>Avant la démo</h3><div class="cat">Jobs et dossiers</div>
+<div class="item">hello (Freestyle) : jeton hello-token, 5 builds gardés, label linux</div>
+<div class="item">workspace-demo (Freestyle : nettoyage du workspace, horodatage), label linux</div>
+<div class="item">outils (Freestyle : mvn -v, secret masqué)</div>
+<div class="cat">Nodes</div>
+<div class="item">Built-In Node : 0 executor</div>
+<div class="item">linux-1 : SSH, 2 executors, labels linux java21 maven</div>
+<div class="cat">Credentials</div>
+<div class="item">agent-ssh-key : SSH Username with private key, portée System</div>
+<div class="item">gitea-token : formation + jeton Gitea, portée Global</div>
+<div class="cat">Tools</div>
+<div class="item">jdk21 → /opt/java/openjdk (déjà dans l&#x27;image de l&#x27;agent)</div>
+<div class="item">maven-3.9 : 3.9.16, installé au premier usage</div>
+<div class="item">Git : Default</div>
+<div class="cat">Plugins</div>
+<div class="item">plugins suggérés (93 avec les dépendances)</div>
+<div class="item">Locale</div>
+<div class="item">Maven Integration, Coverage, Config File Provider, Lockable Resources, SonarQube Scanner, Warnings, Role-based Authorization Strategy</div>
+<div class="cat">Configuration System</div>
+<div class="item">Jenkins URL : http://localhost:8080/</div>
+<div class="item">langue forcée : English</div>
+<div class="item">message système, SCM checkout retry count 2, e-mail jenkins@example.com</div>
+<div class="cat">Sécurité et comptes</div>
+<div class="item">compte admin / Formation-2026 (Jenkins&#x27; own user database)</div>
+<div class="item">Logged-in users can do anything ; inscription et lecture anonyme fermées</div>
+<div class="item">jeton d&#x27;API de admin : demo-cli (30 jours)</div>
+<div class="cat">Gitea</div>
+<div class="item">compte formation / Formation-2026</div>
+<div class="item">dépôt privé formation/library-api, branche main</div>
+<div class="item">jeton d&#x27;accès jenkins (repository : Read)</div></div>
+<div class="carton"><h3>Après la démo</h3><div class="cat">Jobs et dossiers</div>
+<div class="item">hello (Freestyle) : jeton hello-token, 5 builds gardés, label linux</div>
+<div class="item">workspace-demo (Freestyle : nettoyage du workspace, horodatage), label linux</div>
+<div class="item">outils (Freestyle : mvn -v, secret masqué)</div>
+<div class="item nouveau">dossier library<span class="tag">nouveau</span></div>
+<div class="item nouveau">library/library-api-freestyle (Git, Poll SCM H/2, Maven -Drevision=1.4.${BUILD_NUMBER}, JUnit, archive du JAR)<span class="tag">nouveau</span></div>
+<div class="cat">Nodes</div>
+<div class="item">Built-In Node : 0 executor</div>
+<div class="item">linux-1 : SSH, 2 executors, labels linux java21 maven</div>
+<div class="cat">Credentials</div>
+<div class="item">agent-ssh-key : SSH Username with private key, portée System</div>
+<div class="item">gitea-token : formation + jeton Gitea, portée Global</div>
+<div class="cat">Tools</div>
+<div class="item">jdk21 → /opt/java/openjdk (déjà dans l&#x27;image de l&#x27;agent)</div>
+<div class="item">maven-3.9 : 3.9.16, installé au premier usage</div>
+<div class="item">Git : Default</div>
+<div class="cat">Plugins</div>
+<div class="item">plugins suggérés (93 avec les dépendances)</div>
+<div class="item">Locale</div>
+<div class="item">Maven Integration, Coverage, Config File Provider, Lockable Resources, SonarQube Scanner, Warnings, Role-based Authorization Strategy</div>
+<div class="cat">Configuration System</div>
+<div class="item">Jenkins URL : http://localhost:8080/</div>
+<div class="item">langue forcée : English</div>
+<div class="item">message système, SCM checkout retry count 2, e-mail jenkins@example.com</div>
+<div class="cat">Sécurité et comptes</div>
+<div class="item">compte admin / Formation-2026 (Jenkins&#x27; own user database)</div>
+<div class="item">Logged-in users can do anything ; inscription et lecture anonyme fermées</div>
+<div class="item">jeton d&#x27;API de admin : demo-cli (30 jours)</div>
+<div class="cat">Gitea</div>
+<div class="item">compte formation / Formation-2026</div>
+<div class="item">dépôt privé formation/library-api, branche main</div>
+<div class="item">jeton d&#x27;accès jenkins (repository : Read)</div>
+<div class="item nouveau">commit README.md sur main<span class="tag">nouveau</span></div></div>
+</div>
+
+<h2>Le déroulé</h2>
+<ol class="deroule">
+<li><b>Folder</b><span>library</span></li><li><b>Source</b><span>Git + gitea-token</span></li><li><b>Déclencheur</b><span>Poll SCM H/2</span></li><li><b>Build</b><span>maven-3.9, revision=1.4.${BUILD_NUMBER}</span></li><li><b>Post-build</b><span>JUnit + archive du JAR</span></li><li><b>Changement</b><span>commit dans Gitea → build</span></li>
+</ol>
+
+
+
+<h2>À retenir</h2>
+<blockquote><p><strong>Point clé.</strong> Le numéro de build devient la version de l'artefact (<code>library-api-1.4.&lt;n&gt;.jar</code>) : à partir d'un JAR, on retrouve le build, donc le commit (slide 58). La variante <strong>Maven project</strong> (plugin Maven Integration, slide 54) fait la même chose avec moins de champs, mais elle est considérée comme legacy.</p></blockquote>
+
+<div class="nav-bas"><a href="demo-07.html">← Démo 7</a><a href="../DEMOS-v2.md">Pas à pas complet : DEMOS-v2.md</a><a href="demo-09.html">Démo 9 →</a></div>
+</main></body></html>

@@ -1,0 +1,44 @@
+// Demo 13 - Notifications par mail (slides 64 a 66)
+pipeline {
+  agent { label 'linux' }
+  tools { jdk 'jdk21'; maven 'maven-3.9' }
+  options { timestamps() }
+  stages {
+    stage('Build & Tests') {
+      steps {
+        sh 'mvn -B -ntp clean verify -Dmaven.test.failure.ignore=true'
+      }
+      post {
+        always { junit 'target/surefire-reports/TEST-*.xml' }
+      }
+    }
+  }
+  post {
+    failure {
+      emailext(
+        subject: "[Jenkins] ECHEC ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+        body: '''${SCRIPT, template="groovy-html.template"}''',
+        mimeType: 'text/html',
+        to: 'dev-team@example.com',
+        recipientProviders: [culprits(), developers(), requestor()],
+        attachLog: true, compressLog: true)
+    }
+    unstable {
+      emailext(
+        subject: "[Jenkins] INSTABLE ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+        body: '''<p>Tests en echec : ${TEST_COUNTS, var="fail"} sur ${TEST_COUNTS, var="total"}</p>
+<pre>${FAILED_TESTS}</pre>
+<p><a href="${BUILD_URL}testReport/">Ouvrir le rapport</a></p>''',
+        mimeType: 'text/html',
+        to: 'dev-team@example.com',
+        recipientProviders: [culprits()])
+    }
+    fixed {
+      emailext(
+        subject: "[Jenkins] REPARE ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+        body: '${BUILD_URL}',
+        to: 'dev-team@example.com',
+        recipientProviders: [developers()])
+    }
+  }
+}

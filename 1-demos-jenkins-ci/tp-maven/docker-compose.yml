@@ -1,0 +1,25 @@
+# Service ajoute pour le TP Maven. La stack du kit (../docker-compose.yml) doit tourner :
+# ntfy rejoint son reseau "ci-formation" et Jenkins le joint par http://ntfy.
+#
+#   docker compose up -d        (depuis ce dossier tp-maven)
+
+name: jenkins-formation-tp-maven
+
+services:
+
+  # Serveur de notifications push : on publie par un simple POST HTTP sur un "topic",
+  # on lit dans le navigateur (http://localhost:8070/inventaire) ou l'application mobile ntfy.
+  ntfy:
+    image: binwiederhier/ntfy:v2.14.0
+    container_name: ntfy
+    command: serve
+    ports:
+      - "${NTFY_PORT:-8070}:80"
+    environment:
+      NTFY_BASE_URL: "http://localhost:${NTFY_PORT:-8070}"
+    restart: unless-stopped
+
+networks:
+  default:
+    name: ci-formation
+    external: true

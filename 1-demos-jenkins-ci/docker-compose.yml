@@ -1,0 +1,107 @@
+# Stack des demos de la formation Jenkins CI (support v1.2)
+#
+#   docker compose up -d                      -> jenkins, linux-1, gitea, mailpit
+#   docker compose up -d nexus                -> demo 12 (publication Nexus)
+#   docker compose up -d sonarqube            -> demo 13 (SonarQube)
+#
+# Tous les conteneurs partagent le reseau "ci-formation" : ils se joignent
+# par leur nom (http://jenkins:8080, http://gitea:3000, linux-1:22...).
+
+name: jenkins-formation
+
+services:
+
+  # Controller Jenkins (slide 40). Image officielle "nue" : l'assistant de
+  # premier demarrage et les plugins sont deroules dans l'UI (demo 1).
+  jenkins:
+    image: ${JENKINS_IMAGE}
+    container_name: jenkins
+    ports:
+      - "${JENKINS_PORT}:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+    environment:
+      JAVA_OPTS: "-Xmx2g"
+    restart: unless-stopped
+
+  # Agent SSH (slide 46) : JDK 21, Git, client Docker.
+  # La socket Docker de l'hote sert au build et au lancement de l'image (demo 12).
+  linux-1:
+    build: ./agent
+    image: formation/jenkins-agent-linux:jdk21
+    container_name: linux-1
+    hostname: linux-1
+    environment:
+      JENKINS_AGENT_SSH_PUBKEY: ${JENKINS_AGENT_SSH_PUBKEY}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - m2_cache:/home/jenkins/.m2
+    restart: unless-stopped
+
+  # Serveur Git local (remplace GitHub/GitLab : webhooks sans tunnel)
+  gitea:
+    image: gitea/gitea:1.24.7
+    container_name: gitea
+    ports:
+      - "${GITEA_PORT}:3000"
+    environment:
+      GITEA__database__DB_TYPE: sqlite3
+      GITEA__security__INSTALL_LOCK: "true"
+      GITEA__server__ROOT_URL: "http://localhost:${GITEA_PORT}/"
+      GITEA__server__DISABLE_SSH: "true"
+      GITEA__service__DISABLE_REGISTRATION: "true"
+      # Autorise les webhooks vers les conteneurs du reseau (jenkins:8080)
+      GITEA__webhook__ALLOWED_HOST_LIST: "*"
+    volumes:
+      - gitea_data:/data
+    restart: unless-stopped
+
+  # Serveur SMTP de test (slide 64) : equivalent maintenu de MailHog,
+  # memes ports (1025 SMTP, 8025 UI web)
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    ports:
+      - "${MAILPIT_PORT}:8025"
+    restart: unless-stopped
+
+  # Depot d'artefacts (slide 68)
+  nexus:
+    image: sonatype/nexus3:3.97.3
+    container_name: nexus
+    profiles: ["deploiement"]
+    ports:
+      - "${NEXUS_PORT}:8081"
+    volumes:
+      - nexus_data:/nexus-data
+    restart: unless-stopped
+
+  # Analyse qualite (slide 71)
+  sonarqube:
+    image: sonarqube:26.10.0.133078-community
+    container_name: sonarqube
+    profiles: ["qualite"]
+    ports:
+      - "${SONAR_PORT}:9000"
+    environment:
+      SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+      # Sans cela, Elasticsearch passe en lecture seule quand le disque de Docker
+      # depasse 90 % et SonarQube ne demarre pas
+      SONAR_SEARCH_JAVAADDITIONALOPTS: "-Dcluster.routing.allocation.disk.threshold_enabled=false"
+    volumes:
+      - sonar_data:/opt/sonarqube/data
+      - sonar_extensions:/opt/sonarqube/extensions
+    restart: unless-stopped
+
+networks:
+  default:
+    name: ci-formation
+
+volumes:
+  jenkins_home: {}
+  m2_cache: {}
+  gitea_data: {}
+  nexus_data: {}
+  sonar_data: {}
+  sonar_extensions: {}

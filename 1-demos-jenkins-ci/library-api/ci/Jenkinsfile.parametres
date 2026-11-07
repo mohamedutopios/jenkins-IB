@@ -1,0 +1,40 @@
+// Demo 11 - Parametrage de Maven et build parametre (slides 58 a 60)
+pipeline {
+  agent { label 'linux' }
+  tools { jdk 'jdk21'; maven 'maven-3.9' }
+  options { timestamps() }
+  parameters {
+    choice(name: 'TARGET_ENV', choices: ['dev', 'recette', 'prod'],
+           description: 'Environnement de deploiement')
+    string(name: 'VERSION_MINEURE', defaultValue: '1.4',
+           description: 'Version majeure.mineure ; le numero de build complete la version')
+    booleanParam(name: 'RUN_IT', defaultValue: true,
+           description: "Executer les tests d'integration")
+  }
+  environment {
+    MAVEN_ARGS  = '-B -ntp'
+    MAVEN_OPTS  = '-Xmx1g'
+    APP_VERSION = "${params.VERSION_MINEURE}.${BUILD_NUMBER}"
+  }
+  stages {
+    stage('Build') {
+      steps {
+        script { currentBuild.displayName = "#${BUILD_NUMBER} v${APP_VERSION} ${params.TARGET_ENV}" }
+        // -DskipITs : les tests d'integration ont leur propre stage
+        sh 'mvn $MAVEN_ARGS -Drevision=$APP_VERSION -DskipITs clean verify'
+      }
+    }
+    stage("Tests d'integration") {
+      when { expression { params.RUN_IT } }
+      steps {
+        sh 'mvn $MAVEN_ARGS -Drevision=$APP_VERSION failsafe:integration-test failsafe:verify'
+      }
+    }
+    stage('Deploy') {
+      steps {
+        echo "Deploiement de library-api ${APP_VERSION} sur ${params.TARGET_ENV}"
+        sh 'ls -l target/library-api-$APP_VERSION.jar'
+      }
+    }
+  }
+}

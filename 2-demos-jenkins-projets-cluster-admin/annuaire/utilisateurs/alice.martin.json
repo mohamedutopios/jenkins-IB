@@ -1,0 +1,9 @@
+{
+  "id": "alice.martin",
+  "email": "alice.martin@formation.local",
+  "password": "Alice-2026",
+  "displayName": "Alice Martin",
+  "firstName": "Alice",
+  "lastName": "Martin",
+  "groups": ["jenkins-admins"]
+}

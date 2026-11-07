@@ -1,0 +1,7 @@
+{
+  "id": "jenkins-bind",
+  "email": "jenkins-bind@formation.local",
+  "password": "Bind-2026-lecture",
+  "displayName": "Compte de service Jenkins (lecture annuaire)",
+  "groups": ["lldap_strict_readonly"]
+}

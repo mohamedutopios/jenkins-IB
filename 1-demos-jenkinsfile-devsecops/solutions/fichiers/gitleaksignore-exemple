@@ -1,0 +1,3 @@
+# Jeton GitHub pousse par erreur le 5/11/2026, REVOQUE le meme jour (ticket SEC-142).
+# Il reste dans l historique Git : empreinte ignoree apres revocation.
+<empreinte copiee depuis la ligne "Fingerprint:" de la console Gitleaks>

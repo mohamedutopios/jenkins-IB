@@ -1,0 +1,30 @@
+// library-portal : EAR Jakarta EE construit par le reactor, deploye sur WildFly (slides 7 a 9)
+pipeline {
+  agent { label 'linux' }
+  tools { jdk 'jdk21'; maven 'maven-3.9' }
+  options { timestamps() }
+  environment { NEXUS = credentials('nexus-deploy') }     // lecture de library-core dans Nexus
+  stages {
+    stage('Build EAR') {
+      steps {
+        configFileProvider([configFile(fileId: 'nexus-settings', variable: 'SETTINGS')]) {
+          sh 'mvn -B -ntp -s $SETTINGS clean install'    // reactor : ejb -> web -> ear
+        }
+      }
+      post {
+        always  { junit '**/target/surefire-reports/TEST-*.xml' }
+        success { archiveArtifacts artifacts: 'portal-ear/target/*.ear', fingerprint: true }
+      }
+    }
+    stage('Deploy recette') {
+      when { branch 'main' }
+      environment { WF = credentials('wildfly-admin') }   // WF_USR / WF_PSW
+      steps {
+        configFileProvider([configFile(fileId: 'nexus-settings', variable: 'SETTINGS')]) {
+          sh 'mvn -B -ntp -s $SETTINGS -pl portal-ear wildfly:deploy'
+        }
+        sh 'for i in $(seq 1 30); do curl -sf http://wildfly:8080/library/api/health && exit 0; sleep 2; done; exit 1'
+      }
+    }
+  }
+}
